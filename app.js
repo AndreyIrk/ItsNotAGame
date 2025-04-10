@@ -86,9 +86,7 @@ app.use(bodyParser.json());
 
 
 const cors = require('cors');
-app.use(cors({
-  origin: 'https://itsnotagame.netlify.app/' // Разрешить только этот домен
-}));
+app.use(cors());
 
 // Эндпоинт для обработки запросов от Telegram WebApp
 app.post('/webapp', async (req, res) => {
