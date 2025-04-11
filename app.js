@@ -66,6 +66,53 @@ async function addMissingColumns(tableName, columns) {
   }
 }
 
+// Функция для инициализации таблицы experience_levels
+async function initializeExperienceLevels() {
+  const tableName = 'experience_levels';
+  const tableExistsResult = await tableExists(tableName);
+
+  if (!tableExistsResult) {
+    console.log(`Таблица "${tableName}" не существует. Создание таблицы...`);
+    const createTableQuery = `
+      CREATE TABLE ${tableName} (
+        level INT PRIMARY KEY,
+        min_experience INT NOT NULL,
+        max_experience INT NOT NULL
+      );
+    `;
+    await pool.query(createTableQuery);
+    console.log(`Таблица "${tableName}" успешно создана.`);
+
+    // Заполнение таблицы начальными данными
+    const levels = [
+      { level: 0, min_experience: 0, max_experience: 50 },
+      { level: 1, min_experience: 51, max_experience: 100 },
+      { level: 2, min_experience: 101, max_experience: 300 },
+      { level: 3, min_experience: 301, max_experience: 600 },
+      { level: 4, min_experience: 601, max_experience: 1000 },
+      { level: 5, min_experience: 1001, max_experience: 1500 },
+      { level: 6, min_experience: 1501, max_experience: 2100 },
+      { level: 7, min_experience: 2101, max_experience: 2800 },
+      { level: 8, min_experience: 2801, max_experience: 3600 },
+      { level: 9, min_experience: 3601, max_experience: 4500 },
+      { level: 10, min_experience: 4501, max_experience: 5500 },
+    ];
+
+    for (const { level, min_experience, max_experience } of levels) {
+      const insertQuery = `
+        INSERT INTO experience_levels (level, min_experience, max_experience)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (level) DO NOTHING;
+      `;
+      await pool.query(insertQuery, [level, min_experience, max_experience]);
+    }
+
+    console.log(`Таблица "${tableName}" успешно заполнена начальными данными.`);
+  } else {
+    console.log(`Таблица "${tableName}" уже существует.`);
+  }
+}
+
 // Инициализация базы данных
 async function initializeDatabase() {
   try {
@@ -108,7 +155,6 @@ async function initializeDatabase() {
           experience INT DEFAULT 0,    -- Текущий опыт
           health INT DEFAULT 100,      -- Текущее здоровье
           max_health INT DEFAULT 150,  -- Максимальное здоровье
-          damage INT DEFAULT 10,       -- Урон
           mana INT DEFAULT 50,         -- Текущая мана
           max_mana INT DEFAULT 50,     -- Максимальная мана
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -133,10 +179,13 @@ async function initializeDatabase() {
       experience: 'experience INT DEFAULT 0',
       health: 'health INT DEFAULT 100',
       max_health: 'max_health INT DEFAULT 150',
-      mana: 'mana INT DEFAULT 0',
-      max_mana: 'max_mana INT DEFAULT 0',
+      mana: 'mana INT DEFAULT 50',
+      max_mana: 'max_mana INT DEFAULT 50',
     };
     await addMissingColumns(characterTable, characterColumns);
+
+    // Инициализация таблицы experience_levels
+    await initializeExperienceLevels();
   } catch (err) {
     console.error('Ошибка при инициализации базы данных:', err.message);
   }
@@ -190,7 +239,21 @@ app.post('/webapp', async (req, res) => {
       // Получаем характеристики персонажа из таблицы characters
       const getCharacterQuery = 'SELECT * FROM characters WHERE user_id = $1';
       const characterResult = await pool.query(getCharacterQuery, [user_id]);
-      const character = characterResult.rows[0];
+      let character = characterResult.rows[0];
+
+      // Обновляем уровень персонажа на основе опыта
+      const updateLevelQuery = `
+        UPDATE characters
+        SET level = (
+          SELECT level
+          FROM experience_levels
+          WHERE $1 BETWEEN min_experience AND max_experience
+        )
+        WHERE user_id = $2
+        RETURNING *;
+      `;
+      const updatedCharacterResult = await pool.query(updateLevelQuery, [character.experience, user_id]);
+      character = updatedCharacterResult.rows[0];
 
       return res.status(200).json({
         message: 'Пользователь найден',
@@ -206,7 +269,7 @@ app.post('/webapp', async (req, res) => {
 
     // Создаем запись в таблице characters
     const insertCharacterQuery =
-      'INSERT INTO characters (user_id, level, experience, health, max_health, damage, mana, max_mana) VALUES ($1, 0, 0, 100, 150, 0, 0) RETURNING *';
+      'INSERT INTO characters (user_id, level, experience, health, max_health, damage, mana, max_mana) VALUES ($1, 0, 0, 100, 100, 10, 50, 50) RETURNING *';
     const newCharacter = await pool.query(insertCharacterQuery, [user_id]);
 
     console.log('Пользователь успешно добавлен в базу данных:', newUser.rows[0]);
@@ -237,7 +300,21 @@ app.get('/webapp/:user_id', async (req, res) => {
     // Получаем характеристики персонажа из таблицы characters
     const getCharacterQuery = 'SELECT * FROM characters WHERE user_id = $1';
     const characterResult = await pool.query(getCharacterQuery, [req.params.user_id]);
-    const character = characterResult.rows[0];
+    let character = characterResult.rows[0];
+
+    // Обновляем уровень персонажа на основе опыта
+    const updateLevelQuery = `
+      UPDATE characters
+      SET level = (
+        SELECT level
+        FROM experience_levels
+        WHERE $1 BETWEEN min_experience AND max_experience
+      )
+      WHERE user_id = $2
+      RETURNING *;
+    `;
+    const updatedCharacterResult = await pool.query(updateLevelQuery, [character.experience, req.params.user_id]);
+    character = updatedCharacterResult.rows[0];
 
     res.json({
       user: { user_id: user.user_id, photo_url: user.photo_url },
