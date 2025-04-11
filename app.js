@@ -464,13 +464,13 @@ app.post('/battles/:battle_id/join', async (req, res) => {
 
 app.delete('/battles/:battle_id/delete', async (req, res) => {
     const { battle_id } = req.params;
-    const battleId = parseInt(battle_id, 10);
+    //const battleId = parseInt(battle_id, 10);
 
-    if (isNaN(battleId)) {
+    if (isNaN(battle_id)) {
         return res.status(400).json({ error: 'Invalid battle ID' });
     }
 
-    console.log(`Attempting to delete battle with ID: ${battleId}`);
+    console.log(`Attempting to delete battle with ID: ${battle_id}`);
 
     try {
         // Начинаем транзакцию
@@ -479,7 +479,7 @@ app.delete('/battles/:battle_id/delete', async (req, res) => {
 
         // Проверяем существование боя
         const checkQuery = 'SELECT * FROM battles WHERE id = $1 AND status = $2';
-        const { rows } = await client.query(checkQuery, [battleId, 'waiting']);
+        const { rows } = await client.query(checkQuery, [battle_id, 'waiting']);
         if (rows.length === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ error: 'Battle not found or cannot be canceled' });
@@ -487,7 +487,7 @@ app.delete('/battles/:battle_id/delete', async (req, res) => {
 
         // Удаляем бой
         const deleteQuery = 'DELETE FROM battles WHERE id = $1';
-        await client.query(deleteQuery, [battleId]);
+        await client.query(deleteQuery, [battle_id]);
 
         // Завершаем транзакцию
         await client.query('COMMIT');
