@@ -63,7 +63,7 @@ async function initializeDatabase() {
       const createCharacterTableQuery = `
         CREATE TABLE ${characterTable} (
           id SERIAL PRIMARY KEY,
-          user_id BIGINT NOT NULL UNIQUE REFERENCES users(user_id),
+          user_id BIGINT NOT NULL UNIQUE REFERENCES game_users(user_id),
           strength INT DEFAULT 10,
           agility INT DEFAULT 10,
           intuition INT DEFAULT 10,
@@ -145,7 +145,7 @@ app.post('/webapp', async (req, res) => {
 
     // Пользователь не существует, создаем нового
     const insertUserQuery =
-      'INSERT INTO users (user_id, photo_url) VALUES ($1, $2) RETURNING *';
+      'INSERT INTO game_users (user_id, photo_url) VALUES ($1, $2) RETURNING *';
     const newUser = await pool.query(insertUserQuery, [user_id, photo_url]);
 
     // Создаем запись в таблице characters
