@@ -126,7 +126,7 @@ async function initializeBattlesTable() {
           name VARCHAR(255) NOT NULL,
           creator_id BIGINT NOT NULL REFERENCES game_users(user_id),
           opponent_id BIGINT REFERENCES game_users(user_id), -- Может быть NULL
-          status VARCHAR(50) DEFAULT "",
+          status VARCHAR(50),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `;
