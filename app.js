@@ -351,6 +351,7 @@ app.get('/webapp/:user_id', async (req, res) => {
 });
 //Бои
 app.get('/battles', async (req, res) => {
+    console.log('Че за нахуй блять!!!');
     try {
         // Получаем параметр status из query-параметров (по умолчанию 'waiting')
         const status = req.query.status;
