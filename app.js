@@ -125,7 +125,7 @@ async function initializeExperienceLevels() {
 
 // Функция для инициализации таблицы battles
 async function initializeBattlesTable() {
-    
+
     const tableName = 'battles';
     const tableExistsResult = await tableExists(tableName);
 
@@ -362,7 +362,6 @@ app.get('/webapp/:user_id', async (req, res) => {
 });
 //Бои
 app.get('/battles', async (req, res) => {
-    console.log('Че за нахуй блять!!!');
     try {
         // Получаем параметр status из query-параметров (по умолчанию 'waiting')
         const status = req.query.status;
@@ -431,6 +430,28 @@ app.post('/battles/:battle_id/join', async (req, res) => {
         const { rows: updatedRows } = await pool.query(updateQuery, [user_id, battle_id]);
         res.json({ battle: updatedRows[0] });
     } catch (err) {
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// Удаление боя
+app.delete('/battles/:battle_id', async (req, res) => {
+    const { battle_id } = req.params;
+    try {
+        // Проверяем, существует ли бой
+        const checkQuery = 'SELECT * FROM battles WHERE id = $1 AND status = $2';
+        const { rows } = await pool.query(checkQuery, [battle_id, 'waiting']);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Battle not found or cannot be canceled' });
+        }
+
+        // Удаляем бой
+        const deleteQuery = 'DELETE FROM battles WHERE id = $1';
+        await pool.query(deleteQuery, [battle_id]);
+
+        res.json({ message: 'Battle successfully canceled' });
+    } catch (err) {
+        console.error('Ошибка при удалении боя:', err.message);
         res.status(500).json({ error: 'Database error' });
     }
 });
