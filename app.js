@@ -437,6 +437,7 @@ app.post('/battles/:battle_id/join', async (req, res) => {
 // Удаление боя
 app.delete('/battles/:battle_id', async (req, res) => {
     const { battle_id } = req.params;
+    console.log('111')
     try {
         // Проверяем, существует ли бой
         const checkQuery = 'SELECT * FROM battles WHERE id = $1 AND status = $2';
