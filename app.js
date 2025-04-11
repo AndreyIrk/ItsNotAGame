@@ -210,6 +210,7 @@ async function initializeDatabase() {
 
         // Инициализация таблицы experience_levels
         await initializeExperienceLevels();
+        await initializeBattlesTable();
     } catch (err) {
         console.error('Ошибка при инициализации базы данных:', err.message);
     }
