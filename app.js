@@ -352,15 +352,18 @@ app.get('/webapp/:user_id', async (req, res) => {
 //Бои
 app.get('/battles', async (req, res) => {
     try {
+        const status = req.query.status || 'waiting'; // По умолчанию возвращаем бои со статусом "waiting"
         const query = `
-        SELECT id, name, creator_id, opponent_id, status, created_at
-        FROM battles;
+        SELECT b.*, gu1.photo_url AS creator_photo, gu2.photo_url AS opponent_photo
+        FROM battles b
+        LEFT JOIN game_users gu1 ON b.creator_id = gu1.user_id
+        LEFT JOIN game_users gu2 ON b.opponent_id = gu2.user_id
+        WHERE b.status = $1;
       `;
-        const { rows } = await pool.query(query);
+        const { rows } = await pool.query(query, [status]);
         res.json({ battles: rows });
     } catch (err) {
-        console.error('Ошибка при выполнении запроса:', err.message);
-        res.status(500).json({ error: 'Database error', details: err.message });
+        res.status(500).json({ error: 'Database error' });
     }
 });
 
