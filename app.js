@@ -33,6 +33,39 @@ async function tableExists(tableName) {
   }
 }
 
+// Функция для проверки существования полей в таблице
+async function columnExists(tableName, columnName) {
+  try {
+    const query = `
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = $1 AND column_name = $2
+      );
+    `;
+    const result = await pool.query(query, [tableName, columnName]);
+    return result.rows[0].exists;
+  } catch (err) {
+    console.error(`Ошибка при проверке существования столбца "${columnName}" в таблице "${tableName}":`, err.message);
+    throw err;
+  }
+}
+
+// Функция для добавления недостающих полей в таблицу
+async function addMissingColumns(tableName, columns) {
+  for (const [columnName, columnDefinition] of Object.entries(columns)) {
+    const exists = await columnExists(tableName, columnName);
+    if (!exists) {
+      console.log(`Добавление столбца "${columnName}" в таблицу "${tableName}"...`);
+      const alterQuery = `ALTER TABLE ${tableName} ADD COLUMN ${columnDefinition};`;
+      await pool.query(alterQuery);
+      console.log(`Столбец "${columnName}" успешно добавлен.`);
+    } else {
+      console.log(`Столбец "${columnName}" уже существует в таблице "${tableName}".`);
+    }
+  }
+}
+
 // Инициализация базы данных
 async function initializeDatabase() {
   try {
@@ -86,6 +119,25 @@ async function initializeDatabase() {
     } else {
       console.log(`Таблица "${characterTable}" уже существует.`);
     }
+
+    // Проверка и добавление недостающих полей в таблицу characters
+    const characterColumns = {
+      strength: 'strength INT DEFAULT 15',
+      agility: 'agility INT DEFAULT 10',
+      intuition: 'intuition INT DEFAULT 10',
+      endurance: 'endurance INT DEFAULT 10',
+      intelligence: 'intelligence INT DEFAULT 10',
+      wisdom: 'wisdom INT DEFAULT 10',
+      upgrade_points: 'upgrade_points INT DEFAULT 5',
+      level: 'level INT DEFAULT 0',
+      experience: 'experience INT DEFAULT 0',
+      health: 'health INT DEFAULT 100',
+      max_health: 'max_health INT DEFAULT 150',
+      damage: 'damage INT DEFAULT 10',
+      mana: 'mana INT DEFAULT 50',
+      max_mana: 'max_mana INT DEFAULT 50',
+    };
+    await addMissingColumns(characterTable, characterColumns);
   } catch (err) {
     console.error('Ошибка при инициализации базы данных:', err.message);
   }
