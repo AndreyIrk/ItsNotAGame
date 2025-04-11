@@ -1,4 +1,5 @@
 const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 const { Pool } = require('pg');
@@ -125,26 +126,35 @@ async function initializeExperienceLevels() {
 
 // Функция для инициализации таблицы battles
 async function initializeBattlesTable() {
-    //dropTable('battles')
     const tableName = 'battles';
-    const tableExistsResult = await tableExists(tableName);
+    try {
+        const tableExistsResult = await tableExists(tableName);
 
-    if (!tableExistsResult) {
-        console.log(`Таблица "${tableName}" не существует. Создание таблицы...`);
-        const createTableQuery = `
-        CREATE TABLE ${tableName} (
-          id VARCHAR(255) PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          creator_id BIGINT NOT NULL REFERENCES game_users(user_id),
-          opponent_id BIGINT REFERENCES game_users(user_id), -- Может быть NULL
-          status VARCHAR(50),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `;
-        await pool.query(createTableQuery);
-        console.log(`Таблица "${tableName}" успешно создана.`);
-    } else {
-        console.log(`Таблица "${tableName}" уже существует.`);
+        if (!tableExistsResult) {
+            console.log(`Таблица "${tableName}" не существует. Создание таблицы...`);
+
+            // Создаем расширение pgcrypto для поддержки UUID
+            await pool.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto";');
+
+            // Создаем таблицу battles
+            const createTableQuery = `
+                CREATE TABLE ${tableName} (
+                    id UUID PRIMARY KEY DEFAULT uuidv4(), -- Уникальный идентификатор боя
+                    name VARCHAR(255) NOT NULL, -- Название боя
+                    creator_id BIGINT NOT NULL REFERENCES game_users(user_id), -- ID создателя боя
+                    opponent_id BIGINT REFERENCES game_users(user_id), -- ID противника (может быть NULL)
+                    status VARCHAR(50), -- Статус боя (например, 'waiting', 'in_progress', 'finished')
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Время создания боя
+                );
+            `;
+            await pool.query(createTableQuery);
+            console.log(`Таблица "${tableName}" успешно создана.`);
+        } else {
+            console.log(`Таблица "${tableName}" уже существует.`);
+        }
+    } catch (err) {
+        console.error(`Ошибка при инициализации таблицы "${tableName}":`, err.message);
+        throw err; // Передаем ошибку дальше
     }
 }
 
@@ -385,20 +395,36 @@ app.get('/battles', async (req, res) => {
     }
 });
 
+
 app.post('/battles', async (req, res) => {
     const { user_id } = req.body;
+
+    // Проверка входных данных
+    if (!user_id || typeof user_id !== 'number') {
+        return res.status(400).json({ error: 'Invalid or missing user_id' });
+    }
+
     try {
-        const battleId = `Battle-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        // Генерация уникального battleId
+        const battleId = uuidv4();
+        const battleName = `Battle-${Date.now()}`;
+
+        console.log(`Creating new battle with ID: ${battleId} for user ID: ${user_id}`);
+
+        // Вставка нового боя в базу данных
         const insertQuery = `
             INSERT INTO battles (id, name, creator_id, status)
             VALUES ($1, $2, $3, 'waiting')
-            RETURNING *;
+            RETURNING id, name, creator_id, status, created_at;
         `;
-        const battleName = `Battle-${Date.now()}`;
         const { rows } = await pool.query(insertQuery, [battleId, battleName, user_id]);
+
+        // Возвращаем созданный бой
         res.json({ battle: rows[0] });
+
     } catch (err) {
-        res.status(500).json({ error: 'Database error' });
+        console.error('Ошибка при создании боя:', err.message);
+        res.status(500).json({ error: `Database error: ${err.message}` });
     }
 });
 
@@ -436,29 +462,42 @@ app.post('/battles/:battle_id/join', async (req, res) => {
     }
 });
 
-// Удаление боя
 app.delete('/battles/:battle_id/delete', async (req, res) => {
     const { battle_id } = req.params;
-    console.log('1111')
+    const battleId = parseInt(battle_id, 10);
+
+    if (isNaN(battleId)) {
+        return res.status(400).json({ error: 'Invalid battle ID' });
+    }
+
+    console.log(`Attempting to delete battle with ID: ${battleId}`);
+
     try {
-        // Проверяем, существует ли бой
+        // Начинаем транзакцию
+        const client = await pool.connect();
+        await client.query('BEGIN');
+
+        // Проверяем существование боя
         const checkQuery = 'SELECT * FROM battles WHERE id = $1 AND status = $2';
-        const { rows } = await pool.query(checkQuery, [battle_id, 'waiting']);
+        const { rows } = await client.query(checkQuery, [battleId, 'waiting']);
         if (rows.length === 0) {
+            await client.query('ROLLBACK');
             return res.status(404).json({ error: 'Battle not found or cannot be canceled' });
         }
 
         // Удаляем бой
         const deleteQuery = 'DELETE FROM battles WHERE id = $1';
-        await pool.query(deleteQuery, [battle_id]);
+        await client.query(deleteQuery, [battleId]);
 
+        // Завершаем транзакцию
+        await client.query('COMMIT');
         res.json({ message: 'Battle successfully canceled' });
+
     } catch (err) {
         console.error('Ошибка при удалении боя:', err.message);
-        res.status(500).json({ error: 'Database error' });
+        res.status(500).json({ error: `Database error: ${err.message}` });
     }
 });
-
 // Пример эндпоинта для проверки работоспособности сервера
 app.get('/', (req, res) => {
     res.send('Telegram WebApp Server is running!');
