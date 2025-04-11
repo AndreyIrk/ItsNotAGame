@@ -400,15 +400,15 @@ app.post('/battles', async (req, res) => {
     const { user_id } = req.body;
 
     // Проверка входных данных
-    if (!user_id || typeof user_id !== 'number') {
-        return res.status(400).json({ error: 'Invalid or missing user_id' });
-    }
+   // if (!user_id || typeof user_id !== 'number') {
+  //      return res.status(400).json({ error: 'Invalid or missing user_id' });
+  //  }
 
     try {
         // Генерация уникального battleId
         const battleId = `Battle-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const battleName = `Battle-${Date.now()}`;
-
+        
         console.log(`Creating new battle with ID: ${battleId} for user ID: ${user_id}`);
 
         // Вставка нового боя в базу данных
