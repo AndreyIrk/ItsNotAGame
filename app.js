@@ -64,15 +64,20 @@ async function initializeDatabase() {
         CREATE TABLE ${characterTable} (
           id SERIAL PRIMARY KEY,
           user_id BIGINT NOT NULL UNIQUE REFERENCES game_users(user_id),
-          strength INT DEFAULT 10,
+          strength INT DEFAULT 15,
           agility INT DEFAULT 10,
           intuition INT DEFAULT 10,
           endurance INT DEFAULT 10,
           intelligence INT DEFAULT 10,
           wisdom INT DEFAULT 10,
-          upgrade_points INT DEFAULT 0,
+          upgrade_points INT DEFAULT 5,
           level INT DEFAULT 0,         -- Уровень персонажа
           experience INT DEFAULT 0,    -- Текущий опыт
+          health INT DEFAULT 100,      -- Текущее здоровье
+          max_health INT DEFAULT 150,  -- Максимальное здоровье
+          damage INT DEFAULT 10,       -- Урон
+          mana INT DEFAULT 50,         -- Текущая мана
+          max_mana INT DEFAULT 50,     -- Максимальная мана
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `;
@@ -150,7 +155,7 @@ app.post('/webapp', async (req, res) => {
 
     // Создаем запись в таблице characters
     const insertCharacterQuery =
-      'INSERT INTO characters (user_id, level, experience) VALUES ($1, 1, 0) RETURNING *';
+      'INSERT INTO characters (user_id, level, experience, health, max_health, damage, mana, max_mana) VALUES ($1, 0, 0, 100, 100, 10, 50, 50) RETURNING *';
     const newCharacter = await pool.query(insertCharacterQuery, [user_id]);
 
     console.log('Пользователь успешно добавлен в базу данных:', newUser.rows[0]);
