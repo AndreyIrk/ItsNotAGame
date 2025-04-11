@@ -125,7 +125,7 @@ async function initializeExperienceLevels() {
 
 // Функция для инициализации таблицы battles
 async function initializeBattlesTable() {
-    dropTable('battles');
+    //dropTable('battles');
     const tableName = 'battles';
     try {
         const tableExistsResult = await tableExists(tableName);
@@ -261,7 +261,7 @@ app.use(bodyParser.json());
 const cors = require('cors');
 app.use(cors({
     origin: ['https://itsnotagame.netlify.app'],
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
