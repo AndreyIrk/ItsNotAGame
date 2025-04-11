@@ -126,6 +126,7 @@ async function initializeExperienceLevels() {
 
 // Функция для инициализации таблицы battles
 async function initializeBattlesTable() {
+    dropTable('battles');
     const tableName = 'battles';
     try {
         const tableExistsResult = await tableExists(tableName);
