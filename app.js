@@ -100,7 +100,7 @@ pool.connect(async (err) => {
 
 // Инициализация Express-сервера
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware для обработки JSON
 app.use(bodyParser.json());
