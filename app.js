@@ -353,19 +353,20 @@ app.get('/webapp/:user_id', async (req, res) => {
 app.get('/battles', async (req, res) => {
     try {
         // Получаем параметр status из query-параметров (по умолчанию 'waiting')
-        
+        const status = req.query.status;
 
         // Формируем SQL-запрос с фильтрацией по статусу
         const query = `
         SELECT id, name, creator_id, opponent_id, status, created_at
-        FROM battles1
+        FROM battles
+        WHERE status = $1;
       `;
 
         // Выполняем запрос с передачей параметра status
         const { rows } = await pool.query(query, [status]);
 
         // Возвращаем результат
-        res.json({ battles1: rows });
+        res.json({ battles1: rows }); // Используем ключ "battles"
     } catch (err) {
         console.error('Ошибка при выполнении запроса:', err.message);
         res.status(500).json({ error: 'Database error', details: err.message });
