@@ -37,7 +37,7 @@ async function tableExists(tableName) {
 async function initializeDatabase() {
   try {
     // Создание таблицы users
-    const userTable = 'users';
+    const userTable = 'game_users';
     const userTableExists = await tableExists(userTable);
     if (!userTableExists) {
       console.log(`Таблица "${userTable}" не существует. Создание таблицы...`);
