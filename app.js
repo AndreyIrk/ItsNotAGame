@@ -125,7 +125,7 @@ async function initializeExperienceLevels() {
 
 // Функция для инициализации таблицы battles
 async function initializeBattlesTable() {
-   // dropTable('battles')
+    dropTable('battles')
     const tableName = 'battles';
     const tableExistsResult = await tableExists(tableName);
 
@@ -133,7 +133,7 @@ async function initializeBattlesTable() {
         console.log(`Таблица "${tableName}" не существует. Создание таблицы...`);
         const createTableQuery = `
         CREATE TABLE ${tableName} (
-          id SERIAL PRIMARY KEY,
+          id VARCHAR(255) PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           creator_id BIGINT NOT NULL REFERENCES game_users(user_id),
           opponent_id BIGINT REFERENCES game_users(user_id), -- Может быть NULL
@@ -150,7 +150,7 @@ async function initializeBattlesTable() {
 
 // Инициализация базы данных
 async function initializeDatabase() {
-    
+
     try {
         // Создание таблицы users
         const userTable = 'game_users';
@@ -306,7 +306,7 @@ app.post('/webapp', async (req, res) => {
 
         // Создаем запись в таблице characters
         const insertCharacterQuery =
-            'INSERT INTO characters (user_id, level, experience, health, max_health, damage, mana, max_mana) VALUES ($1, 0, 0, 100, 100, 10, 50, 50) RETURNING *';
+            'INSERT INTO characters (user_id, level, experience, health, max_health, mana, max_mana) VALUES ($1, 0, 0, 100, 100,  50, 50) RETURNING *';
         const newCharacter = await pool.query(insertCharacterQuery, [user_id]);
 
         console.log('Пользователь успешно добавлен в базу данных:', newUser.rows[0]);
@@ -388,13 +388,14 @@ app.get('/battles', async (req, res) => {
 app.post('/battles', async (req, res) => {
     const { user_id } = req.body;
     try {
+        const battleId = `Battle-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const insertQuery = `
-        INSERT INTO battles (name, creator_id, status)
-        VALUES ($1, $2, 'waiting')
-        RETURNING *;
-      `;
+            INSERT INTO battles (id, name, creator_id, status)
+            VALUES ($1, $2, $3, 'waiting')
+            RETURNING *;
+        `;
         const battleName = `Battle-${Date.now()}`;
-        const { rows } = await pool.query(insertQuery, [battleName, user_id]);
+        const { rows } = await pool.query(insertQuery, [battleId, battleName, user_id]);
         res.json({ battle: rows[0] });
     } catch (err) {
         res.status(500).json({ error: 'Database error' });
@@ -438,7 +439,7 @@ app.post('/battles/:battle_id/join', async (req, res) => {
 // Удаление боя
 app.delete('/battles/:battle_id/delete', async (req, res) => {
     const { battle_id } = req.params;
-    
+
     try {
         // Проверяем, существует ли бой
         const checkQuery = 'SELECT * FROM battles WHERE id = $1 AND status = $2';
