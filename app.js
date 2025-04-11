@@ -286,44 +286,44 @@ app.post('/webapp', async (req, res) => {
   }
 });
 
-// Эндпоинт для получения данных пользователя по user_id
 app.get('/webapp/:user_id', async (req, res) => {
-  try {
-    const { rows } = await pool.query('SELECT * FROM game_users WHERE user_id = $1', [req.params.user_id]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+    try {
+      const { rows } = await pool.query('SELECT * FROM game_users WHERE user_id = $1', [req.params.user_id]);
+  
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      const user = rows[0];
+  
+      // Получаем характеристики персонажа из таблицы characters
+      const getCharacterQuery = 'SELECT * FROM characters WHERE user_id = $1';
+      const characterResult = await pool.query(getCharacterQuery, [req.params.user_id]);
+      const character = characterResult.rows[0];
+  
+      // Получаем данные об уровнях опыта из таблицы experience_levels
+      const getExperienceLevelsQuery = 'SELECT * FROM experience_levels ORDER BY level ASC';
+      const experienceLevelsResult = await pool.query(getExperienceLevelsQuery);
+      const experienceLevels = Array.isArray(experienceLevelsResult.rows) ? experienceLevelsResult.rows : [];
+  
+      // Находим текущий уровень персонажа
+      const currentLevelData = experienceLevels.find(
+        (level) => character.experience >= level.min_experience && character.experience <= level.max_experience
+      ) || { level: 0, max_experience: 0 };
+  
+      res.json({
+        user: { user_id: user.user_id, photo_url: user.photo_url },
+        character: {
+          ...character,
+          currentLevel: currentLevelData.level,
+          experienceToNextLevel: currentLevelData.max_experience - character.experience,
+        },
+        experience_levels: experienceLevels,
+      });
+    } catch (err) {
+      res.status(500).json({ error: 'Database error' });
     }
-
-    const user = rows[0];
-
-    // Получаем характеристики персонажа из таблицы characters
-    const getCharacterQuery = 'SELECT * FROM characters WHERE user_id = $1';
-    const characterResult = await pool.query(getCharacterQuery, [req.params.user_id]);
-    let character = characterResult.rows[0];
-
-    // Обновляем уровень персонажа на основе опыта
-    const updateLevelQuery = `
-      UPDATE characters
-      SET level = (
-        SELECT level
-        FROM experience_levels
-        WHERE $1 BETWEEN min_experience AND max_experience
-      )
-      WHERE user_id = $2
-      RETURNING *;
-    `;
-    const updatedCharacterResult = await pool.query(updateLevelQuery, [character.experience, req.params.user_id]);
-    character = updatedCharacterResult.rows[0];
-
-    res.json({
-      user: { user_id: user.user_id, photo_url: user.photo_url },
-      character: character,
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Database error' });
-  }
-});
+  });
 
 // Пример эндпоинта для проверки работоспособности сервера
 app.get('/', (req, res) => {
