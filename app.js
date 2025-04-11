@@ -125,7 +125,7 @@ async function initializeExperienceLevels() {
 
 // Функция для инициализации таблицы battles
 async function initializeBattlesTable() {
-
+    dropTable('battles')
     const tableName = 'battles';
     const tableExistsResult = await tableExists(tableName);
 
@@ -150,6 +150,7 @@ async function initializeBattlesTable() {
 
 // Инициализация базы данных
 async function initializeDatabase() {
+    
     try {
         // Создание таблицы users
         const userTable = 'game_users';
