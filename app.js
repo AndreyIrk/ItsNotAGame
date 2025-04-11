@@ -123,7 +123,7 @@ app.post('/webapp', async (req, res) => {
 
   try {
     // Проверяем существование пользователя в таблице users
-    const checkUserQuery = 'SELECT * FROM users WHERE user_id = $1';
+    const checkUserQuery = 'SELECT * FROM game_users WHERE user_id = $1';
     const { rows } = await pool.query(checkUserQuery, [user_id]);
 
     if (rows.length > 0) {
@@ -170,7 +170,7 @@ app.post('/webapp', async (req, res) => {
 // Эндпоинт для получения данных пользователя по user_id
 app.get('/webapp/:user_id', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM users WHERE user_id = $1', [req.params.user_id]);
+    const { rows } = await pool.query('SELECT * FROM game_users WHERE user_id = $1', [req.params.user_id]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
