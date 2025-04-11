@@ -436,7 +436,7 @@ app.post('/battles/:battle_id/join', async (req, res) => {
 });
 
 // Удаление боя
-app.delete('/battles/:battle_id', async (req, res) => {
+app.delete('/battles/:battle_id/delete', async (req, res) => {
     const { battle_id } = req.params;
     
     try {
