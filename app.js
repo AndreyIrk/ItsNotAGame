@@ -350,7 +350,7 @@ app.get('/webapp/:user_id', async (req, res) => {
     }
 });
 //Бои
-app.get('/webapp/battles', async (req, res) => {
+app.get('/battles', async (req, res) => {
     try {
         const query = `
         SELECT b.*, gu1.photo_url AS creator_photo, gu2.photo_url AS opponent_photo
@@ -365,7 +365,7 @@ app.get('/webapp/battles', async (req, res) => {
     }
 });
 
-app.post('/webapp/battles', async (req, res) => {
+app.post('/battles', async (req, res) => {
     const { user_id } = req.body;
     try {
         const insertQuery = `
@@ -381,7 +381,7 @@ app.post('/webapp/battles', async (req, res) => {
     }
 });
 
-app.post('/webapp/battles/:battle_id/join', async (req, res) => {
+app.post('/battles/:battle_id/join', async (req, res) => {
     const { battle_id } = req.params;
     const { user_id } = req.body;
 
@@ -390,8 +390,15 @@ app.post('/webapp/battles/:battle_id/join', async (req, res) => {
         const checkQuery = 'SELECT * FROM battles WHERE id = $1 AND opponent_id IS NULL';
         const { rows } = await pool.query(checkQuery, [battle_id]);
 
+        const isCreatorQuery = 'SELECT creator_id FROM battles WHERE id = $1';
+        const { rows: creatorRows } = await pool.query(isCreatorQuery, [battle_id]);
+
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Battle not found or already has an opponent' });
+        }
+
+        if (creatorRows[0]?.creator_id === user_id) {
+            return res.status(400).json({ error: 'You cannot join your own battle' });
         }
 
         // Присоединяем пользователя к бою
