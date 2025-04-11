@@ -115,7 +115,7 @@ async function initializeExperienceLevels() {
 
 // Функция для инициализации таблицы battles
 async function initializeBattlesTable() {
-    const tableName = 'battles';
+    const tableName = 'battles1';
     const tableExistsResult = await tableExists(tableName);
 
     if (!tableExistsResult) {
@@ -126,7 +126,7 @@ async function initializeBattlesTable() {
           name VARCHAR(255) NOT NULL,
           creator_id BIGINT NOT NULL REFERENCES game_users(user_id),
           opponent_id BIGINT REFERENCES game_users(user_id), -- Может быть NULL
-          status VARCHAR(50) DEFAULT 'waiting', -- waiting, in_progress, finished
+          status VARCHAR(50) DEFAULT "",
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `;
@@ -358,14 +358,14 @@ app.get('/battles', async (req, res) => {
         // Формируем SQL-запрос с фильтрацией по статусу
         const query = `
         SELECT id, name, creator_id, opponent_id, status, created_at
-        FROM battles
+        FROM battles1
       `;
 
         // Выполняем запрос с передачей параметра status
         const { rows } = await pool.query(query, [status]);
 
         // Возвращаем результат
-        res.json({ battles: rows });
+        res.json({ battles1: rows });
     } catch (err) {
         console.error('Ошибка при выполнении запроса:', err.message);
         res.status(500).json({ error: 'Database error', details: err.message });
@@ -376,7 +376,7 @@ app.post('/battles', async (req, res) => {
     const { user_id } = req.body;
     try {
         const insertQuery = `
-        INSERT INTO battles (name, creator_id, status)
+        INSERT INTO battles1 (name, creator_id, status)
         VALUES ($1, $2, 'waiting')
         RETURNING *;
       `;
@@ -394,10 +394,10 @@ app.post('/battles/:battle_id/join', async (req, res) => {
 
     try {
         // Проверяем, существует ли бой и доступен ли он для присоединения
-        const checkQuery = 'SELECT * FROM battles WHERE id = $1 AND opponent_id IS NULL';
+        const checkQuery = 'SELECT * FROM battles1 WHERE id = $1 AND opponent_id IS NULL';
         const { rows } = await pool.query(checkQuery, [battle_id]);
 
-        const isCreatorQuery = 'SELECT creator_id FROM battles WHERE id = $1';
+        const isCreatorQuery = 'SELECT creator_id FROM battles1 WHERE id = $1';
         const { rows: creatorRows } = await pool.query(isCreatorQuery, [battle_id]);
 
         if (rows.length === 0) {
@@ -410,7 +410,7 @@ app.post('/battles/:battle_id/join', async (req, res) => {
 
         // Присоединяем пользователя к бою
         const updateQuery = `
-        UPDATE battles
+        UPDATE battles1
         SET opponent_id = $1, status = 'in_progress'
         WHERE id = $2
         RETURNING *;
