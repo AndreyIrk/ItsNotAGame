@@ -133,9 +133,8 @@ async function initializeDatabase() {
       experience: 'experience INT DEFAULT 0',
       health: 'health INT DEFAULT 100',
       max_health: 'max_health INT DEFAULT 150',
-      damage: 'damage INT DEFAULT 10',
-      mana: 'mana INT DEFAULT 50',
-      max_mana: 'max_mana INT DEFAULT 50',
+      mana: 'mana INT DEFAULT 0',
+      max_mana: 'max_mana INT DEFAULT 0',
     };
     await addMissingColumns(characterTable, characterColumns);
   } catch (err) {
@@ -207,7 +206,7 @@ app.post('/webapp', async (req, res) => {
 
     // Создаем запись в таблице characters
     const insertCharacterQuery =
-      'INSERT INTO characters (user_id, level, experience, health, max_health, damage, mana, max_mana) VALUES ($1, 0, 0, 100, 100, 10, 50, 50) RETURNING *';
+      'INSERT INTO characters (user_id, level, experience, health, max_health, damage, mana, max_mana) VALUES ($1, 0, 0, 100, 150, 0, 0) RETURNING *';
     const newCharacter = await pool.query(insertCharacterQuery, [user_id]);
 
     console.log('Пользователь успешно добавлен в базу данных:', newUser.rows[0]);
