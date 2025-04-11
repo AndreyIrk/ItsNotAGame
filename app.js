@@ -350,7 +350,7 @@ app.get('/webapp/:user_id', async (req, res) => {
     }
 });
 //Бои
-app.get('/webapp/:battles', async (req, res) => {
+app.get('/webapp/battles', async (req, res) => {
     try {
         const query = `
         SELECT b.*, gu1.photo_url AS creator_photo, gu2.photo_url AS opponent_photo
@@ -365,7 +365,7 @@ app.get('/webapp/:battles', async (req, res) => {
     }
 });
 
-app.post('/webapp/:battles', async (req, res) => {
+app.post('/webapp/battles', async (req, res) => {
     const { user_id } = req.body;
     try {
         const insertQuery = `
@@ -381,7 +381,7 @@ app.post('/webapp/:battles', async (req, res) => {
     }
 });
 
-app.post('/webapp/:battles/:battle_id/join', async (req, res) => {
+app.post('/webapp/battles/:battle_id/join', async (req, res) => {
     const { battle_id } = req.params;
     const { user_id } = req.body;
 
