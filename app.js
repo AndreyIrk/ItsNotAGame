@@ -30,13 +30,13 @@ async function dropTable(tableName) {
 // Функция для проверки существования таблицы
 async function tableExists(tableName) {
     try {
-        const query = `
-      SELECT EXISTS (
-        SELECT FROM pg_catalog.pg_tables
-        WHERE schemaname = 'public' AND tablename = $1
-      );
-    `;
-        const result = await pool.query(query, [tableName]);
+        const result = await pool.query(
+            `SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = $1
+            );`,
+            [tableName]
+        );
         return result.rows[0].exists;
     } catch (err) {
         console.error(`Ошибка при проверке существования таблицы "${tableName}":`, err.message);
