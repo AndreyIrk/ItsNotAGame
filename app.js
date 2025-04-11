@@ -16,6 +16,16 @@ const pool = new Pool({
     }
 });
 
+async function dropTable(tableName) {
+    try {
+        const query = `DROP TABLE IF EXISTS ${tableName};`;
+        await pool.query(query);
+        console.log(`Таблица "${tableName}" успешно удалена.`);
+    } catch (err) {
+        console.error(`Ошибка при удалении таблицы "${tableName}":`, err.message);
+    }
+}
+
 // Функция для проверки существования таблицы
 async function tableExists(tableName) {
     try {
@@ -115,6 +125,7 @@ async function initializeExperienceLevels() {
 
 // Функция для инициализации таблицы battles
 async function initializeBattlesTable() {
+    dropTable('battles')
     const tableName = 'battles';
     const tableExistsResult = await tableExists(tableName);
 
