@@ -1,5 +1,4 @@
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 const { Pool } = require('pg');
@@ -140,7 +139,7 @@ async function initializeBattlesTable() {
             // Создаем таблицу battles
             const createTableQuery = `
                 CREATE TABLE ${tableName} (
-                    id UUID PRIMARY KEY DEFAULT uuidv4(), -- Уникальный идентификатор боя
+                    id VARCHAR(255) PRIMARY KEY,
                     name VARCHAR(255) NOT NULL, -- Название боя
                     creator_id BIGINT NOT NULL REFERENCES game_users(user_id), -- ID создателя боя
                     opponent_id BIGINT REFERENCES game_users(user_id), -- ID противника (может быть NULL)
@@ -407,7 +406,7 @@ app.post('/battles', async (req, res) => {
 
     try {
         // Генерация уникального battleId
-        const battleId = uuidv4();
+        const battleId = `Battle-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const battleName = `Battle-${Date.now()}`;
 
         console.log(`Creating new battle with ID: ${battleId} for user ID: ${user_id}`);
